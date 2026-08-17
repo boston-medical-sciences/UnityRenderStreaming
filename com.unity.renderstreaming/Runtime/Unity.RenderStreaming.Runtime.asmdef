@@ -46,6 +46,11 @@
             "define": "URS_USE_TEXTMESHPRO"
         },
         {
+            "name": "com.unity.ugui",
+            "expression": "2.0.0",
+            "define": "URS_USE_TEXTMESHPRO"
+        },
+        {
             "name": "com.unity.inputsystem",
             "expression": "1.1",
             "define": "INPUTSYSTEM_1_1_OR_NEWER"
