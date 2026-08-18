@@ -3,7 +3,7 @@
 `com.unity.renderstreaming` の BMS 改変記録。upstream の `CHANGELOG.md` とは別に、**BMS が加えた差分のみ**を記録する。
 
 - **upstream 基準バージョン:** `3.1.0-exp.9`（本リポジトリの tag `3.1.0-exp.9` = upstream 無改変）
-- **本ブランチの版:** `3.1.0-exp.9-bms.1`（`package.json` の `version`。tag `3.1.0-exp.9-bms.1` は節目の目印で、参照には使わない）
+- **本ブランチの版:** `3.1.0-exp.9-bms.2`（`package.json` の `version`。tag は節目の目印で、参照には使わない）
 - **改変ブランチ:** `bms/main`（upstream ミラーの `main` とは分離して管理する）
 - **利用側:** aim4unity が UPM git 依存として `bms/main` ブランチを参照する
   （`https://github.com/boston-medical-sciences/UnityRenderStreaming.git?path=/com.unity.renderstreaming#bms/main`）。
@@ -18,19 +18,18 @@ upstream 3.1.0-exp.9 は本リポジトリの tag `3.1.0-exp.9` である。BMS 
 git diff 3.1.0-exp.9..bms/main
 ```
 
-## 改変一覧（3.1.0-exp.9-bms.1）
+## 改変一覧（3.1.0-exp.9-bms.2）
 
 | ファイル | 目的 | 内容 |
 |---|---|---|
 | `Runtime/Unity.RenderStreaming.Runtime.asmdef` | Unity 6 対応 | `com.unity.ugui@2.0.0` に対する `URS_USE_TEXTMESHPRO` の versionDefine を追加。Unity 6 では TextMesh Pro が `com.unity.ugui` へ統合され、upstream が参照する `com.unity.textmeshpro` パッケージが解決されないため、同 define が立たずコンパイルが通らない。 |
-| `package.json` | 版の識別 | `version` を `3.1.0-exp.9` から `3.1.0-exp.9-bms.1` に変更（BMS 改変版であることを判別可能にする）。 |
-
-C# ソースへの改変はない。
+| `Editor/RenderStreamingWizard.cs` | Unity 6 対応（tarball 揃え） | `RequiredAndroidSdkVersion` を `AndroidApiLevel22` から `AndroidApiLevel25` に変更。Unity 6 では `AndroidApiLevel22` が obsolete エラー（CS0619）になりコンパイルが通らない。レジストリ公開 tarball には同修正が含まれている（tag との差分）。 |
+| `package.json` | 版の識別 | `version` を `3.1.0-exp.9` から `3.1.0-exp.9-bms.2` に変更（BMS 改変版であることを判別可能にする）。 |
 
 ### 版表記変更による既知の副作用
 
 Render Streaming Wizard の Web アプリ取得（`WebAppDownloader`）は、インストール済みパッケージの `version` をそのまま GitHub リリースの tag に使う
-（`https://github.com/Unity-Technologies/UnityRenderStreaming/releases/download/{version}/webserver.exe`）。`-bms.1` 付きの版は upstream に存在しないため 404 になる。
+（`https://github.com/Unity-Technologies/UnityRenderStreaming/releases/download/{version}/webserver.exe`）。`-bms.N` 付きの版は upstream に存在しないため 404 になる。
 
 ただしこれは版表記変更だけの問題ではない。**upstream の `3.1.0-exp.9` リリースにはサーバーバイナリが含まれておらず**（成果物は
 `com.unity.renderstreaming-3.1.0-exp.9.tgz` のみ）、`WebAppDownloader` の既定値 `3.1.0-exp.8` はタグ自体が存在しない。つまり Wizard からの
