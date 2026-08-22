@@ -65,6 +65,12 @@ namespace Unity.RenderStreaming
         /// </summary>
         public bool Running => m_running;
 
+        /// <summary>
+        /// Event invoked when the connection to the signaling server is established.
+        /// This event is invoked again each time the connection is re-established.
+        /// </summary>
+        public event Action onStart;
+
         static ISignaling CreateSignaling(SignalingSettings settings, SynchronizationContext context)
         {
             if (settings.signalingClass == null)
@@ -270,6 +276,7 @@ namespace Unity.RenderStreaming
                 throw new InvalidOperationException("Handler list is empty.");
 
             m_instance = new SignalingManagerInternal(ref dependencies);
+            m_instance.onStart += OnInstanceStart;
             m_provider = new SignalingEventProvider(m_instance);
 
             foreach (var handler in _handlers)
@@ -320,9 +327,18 @@ namespace Unity.RenderStreaming
         /// </example>
         public void Stop()
         {
-            m_instance?.Dispose();
-            m_instance = null;
+            if (m_instance != null)
+            {
+                m_instance.onStart -= OnInstanceStart;
+                m_instance.Dispose();
+                m_instance = null;
+            }
             m_running = false;
+        }
+
+        private void OnInstanceStart()
+        {
+            onStart?.Invoke();
         }
 
         void Awake()

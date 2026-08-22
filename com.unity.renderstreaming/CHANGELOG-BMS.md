@@ -3,7 +3,7 @@
 `com.unity.renderstreaming` の BMS 改変記録。upstream の `CHANGELOG.md` とは別に、**BMS が加えた差分のみ**を記録する。
 
 - **upstream 基準バージョン:** `3.1.0-exp.9`（本リポジトリの tag `3.1.0-exp.9` = upstream 無改変）
-- **本ブランチの版:** `3.1.0-exp.9-bms.2`（`package.json` の `version`。tag は節目の目印で、参照には使わない）
+- **本ブランチの版:** `3.1.0-exp.9-bms.3`（`package.json` の `version`。tag は節目の目印で、参照には使わない）
 - **改変ブランチ:** `bms/main`（upstream ミラーの `main` とは分離して管理する）
 - **利用側:** aim4unity が UPM git 依存として `bms/main` ブランチを参照する
   （`https://github.com/boston-medical-sciences/UnityRenderStreaming.git?path=/com.unity.renderstreaming#bms/main`）。
@@ -18,13 +18,14 @@ upstream 3.1.0-exp.9 は本リポジトリの tag `3.1.0-exp.9` である。BMS 
 git diff 3.1.0-exp.9..bms/main
 ```
 
-## 改変一覧（3.1.0-exp.9-bms.2）
+## 改変一覧（3.1.0-exp.9-bms.3）
 
 | ファイル | 目的 | 内容 |
 |---|---|---|
 | `Runtime/Unity.RenderStreaming.Runtime.asmdef` | Unity 6 対応 | `com.unity.ugui@2.0.0` に対する `URS_USE_TEXTMESHPRO` の versionDefine を追加。Unity 6 では TextMesh Pro が `com.unity.ugui` へ統合され、upstream が参照する `com.unity.textmeshpro` パッケージが解決されないため、同 define が立たずコンパイルが通らない。 |
 | `Editor/RenderStreamingWizard.cs` | Unity 6 対応（tarball 揃え） | `RequiredAndroidSdkVersion` を `AndroidApiLevel22` から `AndroidApiLevel25` に変更。Unity 6 では `AndroidApiLevel22` が obsolete エラー（CS0619）になりコンパイルが通らない。レジストリ公開 tarball には同修正が含まれている（tag との差分）。 |
-| `package.json` | 版の識別 | `version` を `3.1.0-exp.9` から `3.1.0-exp.9-bms.2` に変更（BMS 改変版であることを判別可能にする）。 |
+| `Runtime/Scripts/SignalingManager.cs` | API 追加 | シグナリングサーバーへの接続確立時に発火する `onStart` イベントを公開（再接続時も毎回発火）。内部クラス `SignalingManagerInternal` が既に持つ同名イベントを転送するだけの追加。WebSocket が開く前に送った接続要求（`connect` メッセージ）は破棄されるため、利用側が接続確立を契機に接続登録を行うために必要。 |
+| `package.json` | 版の識別 | `version` を `3.1.0-exp.9` から `3.1.0-exp.9-bms.3` に変更（BMS 改変版であることを判別可能にする）。 |
 
 ### 版表記変更による既知の副作用
 
