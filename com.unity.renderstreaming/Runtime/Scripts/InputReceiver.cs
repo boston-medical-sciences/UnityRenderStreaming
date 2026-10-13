@@ -303,6 +303,7 @@ namespace Unity.RenderStreaming
             {
                 receiver = new Receiver(channel);
                 receiver.onDeviceChange += onDeviceChange;
+                receiver.InputFieldEventFilter = m_InputFieldEventFilter;
                 receiverInput = new InputRemoting(receiver);
                 subscriberDisposer = receiverInput.Subscribe(receiverInput);
                 receiverInput.StartSending();
@@ -344,6 +345,27 @@ namespace Unity.RenderStreaming
             receiver.EnableInputPositionCorrection = enabled;
         }
 
+        /// <summary>
+        /// Sets the filter that decides whether remote keyboard events are emulated on the selected input field.
+        /// The filter is kept across reconnections and applies to every channel set after this call.
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// inputReceiver.SetInputFieldEventFilter(selected => selected.layer == remoteLayer);
+        /// ]]>
+        ///</code>
+        /// </example>
+        /// <param name="filter">Returns false to skip the selected GameObject. Null emulates events on any selected input field.</param>
+        public void SetInputFieldEventFilter(Func<GameObject, bool> filter)
+        {
+            m_InputFieldEventFilter = filter;
+            if (receiver != null)
+            {
+                receiver.InputFieldEventFilter = filter;
+            }
+        }
+
         protected virtual void OnDestroy()
         {
             Dispose();
@@ -370,6 +392,7 @@ namespace Unity.RenderStreaming
         [NonSerialized] private InputUser m_InputUser;
 
         [NonSerialized] private Receiver receiver;
+        [NonSerialized] private Func<GameObject, bool> m_InputFieldEventFilter;
         [NonSerialized] private InputRemoting receiverInput;
         [NonSerialized] private IDisposable subscriberDisposer;
 

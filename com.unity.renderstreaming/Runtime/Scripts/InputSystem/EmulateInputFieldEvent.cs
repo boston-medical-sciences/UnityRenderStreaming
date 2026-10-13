@@ -243,6 +243,9 @@ namespace Unity.RenderStreaming.InputSystem
             if (obj == null)
                 return;
 
+            if (InputFieldEventFilter != null && !InputFieldEventFilter(obj))
+                return;
+
             var field = FindInputField(obj);
             if (field == null)
                 return;

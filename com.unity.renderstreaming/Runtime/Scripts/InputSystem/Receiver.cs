@@ -34,6 +34,12 @@ namespace Unity.RenderStreaming.InputSystem
         public bool EnableInputPositionCorrection { set; get; }
 
         /// <summary>
+        /// Decides whether remote keyboard events are emulated on the selected input field.
+        /// Return false to skip the selected GameObject. When null, events go to any selected input field.
+        /// </summary>
+        public Func<GameObject, bool> InputFieldEventFilter { set; get; }
+
+        /// <summary>
         ///
         /// </summary>
         /// <param name="channel"></param>
