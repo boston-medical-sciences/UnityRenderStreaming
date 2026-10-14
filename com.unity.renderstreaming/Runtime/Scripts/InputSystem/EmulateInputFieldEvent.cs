@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 #if URS_USE_TEXTMESHPRO
 using TMPro;
@@ -95,11 +96,27 @@ namespace Unity.RenderStreaming.InputSystem
             { (int)Key.RightApple, KeyCode.RightApple }
         };
 
+        // Control characters that the remote browser sends as a TextEvent on every keydown,
+        // including auto-repeated keydowns, and the key each one stands for.
+        private static readonly Dictionary<int, KeyCode> s_TextEventKeyMap = new Dictionary<int, KeyCode>()
+        {
+            { 0x08, KeyCode.Backspace },
+            { 0x7F, KeyCode.Delete }
+        };
+
+        /// <summary>
+        /// Invoked when Ctrl+C or Ctrl+X is pressed on the selected input field.
+        /// The argument is the selected text. Not invoked for password fields or when nothing is selected.
+        /// </summary>
+        public event Action<string> onInputFieldCopy;
+
         interface IInputField
         {
             void ProcessEvent(Event e);
             void ForceLabelUpdate();
             void AppendText(char character);
+            bool IsPassword { get; }
+            string GetSelectedText();
         }
 
         class UGUIInputField : IInputField
@@ -121,6 +138,11 @@ namespace Unity.RenderStreaming.InputSystem
             public void AppendText(char character)
             {
                 m_field.text += character;
+            }
+            public bool IsPassword => m_field.inputType == InputField.InputType.Password;
+            public string GetSelectedText()
+            {
+                return GetSubstring(m_field.text, m_field.selectionAnchorPosition, m_field.selectionFocusPosition);
             }
         }
 
@@ -144,6 +166,11 @@ namespace Unity.RenderStreaming.InputSystem
             public void AppendText(char character)
             {
                 m_field.text += character;
+            }
+            public bool IsPassword => m_field.inputType == TMP_InputField.InputType.Password;
+            public string GetSelectedText()
+            {
+                return GetSubstring(m_field.text, m_field.selectionStringAnchorPosition, m_field.selectionStringFocusPosition);
             }
         }
 #endif
@@ -208,6 +235,15 @@ namespace Unity.RenderStreaming.InputSystem
             {
                 var textEventPtr = (TextEvent*)ptr.ToPointer();
                 var utf32Char = textEventPtr->character;
+                if (s_TextEventKeyMap.TryGetValue(utf32Char, out var textEventKeyCode))
+                {
+                    return new Event
+                    {
+                        type = EventType.KeyDown,
+                        keyCode = textEventKeyCode,
+                        modifiers = modifiers
+                    };
+                }
                 if (utf32Char >= 0x10000)
                 {
                     // todo: not supported multibyte character.
@@ -229,6 +265,10 @@ namespace Unity.RenderStreaming.InputSystem
                 };
             }
 
+            // Keys in s_TextEventKeyMap are emulated from their TextEvent.
+            if (s_TextEventKeyMap.ContainsValue(keyCode))
+                return null;
+
             return new Event
             {
                 type = EventType.KeyDown,
@@ -249,12 +289,72 @@ namespace Unity.RenderStreaming.InputSystem
             var field = FindInputField(obj);
             if (field == null)
                 return;
+            if (TryHandleClipboardShortcut(ptr, field))
+                return;
             Event e = CreateEvent(ptr);
             if (e != null)
             {
                 field.ProcessEvent(e);
                 field.ForceLabelUpdate();
             }
+        }
+
+        // Swallows every C / X / V key event that has Ctrl held, whatever other modifiers are held, so none of them reaches the input field.
+        // Copy and cut are performed only when Ctrl is the sole modifier (CapsLock is ignored).
+        bool TryHandleClipboardShortcut(InputEventPtr ptr, IInputField field)
+        {
+            if (ptr.type != StateEvent.Type && ptr.type != DeltaStateEvent.Type)
+                return false;
+
+            var (modifiers, keyCode) = GetEventModifiersAndKeyCode(ptr);
+            if ((modifiers & EventModifiers.Control) == 0)
+                return false;
+
+            var isCtrlOnly = (modifiers & ~EventModifiers.CapsLock) == EventModifiers.Control;
+            switch (keyCode)
+            {
+                case KeyCode.C:
+                    if (isCtrlOnly)
+                        InvokeInputFieldCopy(field);
+                    return true;
+                case KeyCode.X:
+                    if (isCtrlOnly)
+                    {
+                        InvokeInputFieldCopy(field);
+                        DeleteSelection(field);
+                    }
+                    return true;
+                case KeyCode.V:
+                    // The remote peer sends the pasted text as TextEvents.
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        void InvokeInputFieldCopy(IInputField field)
+        {
+            if (field.IsPassword)
+                return;
+            var text = field.GetSelectedText();
+            if (text.Length == 0)
+                return;
+            onInputFieldCopy?.Invoke(text);
+        }
+
+        static void DeleteSelection(IInputField field)
+        {
+            if (field.GetSelectedText().Length == 0)
+                return;
+            field.ProcessEvent(new Event { type = EventType.KeyDown, keyCode = KeyCode.Delete });
+            field.ForceLabelUpdate();
+        }
+
+        static string GetSubstring(string text, int anchor, int focus)
+        {
+            var start = Mathf.Clamp(Mathf.Min(anchor, focus), 0, text.Length);
+            var end = Mathf.Clamp(Mathf.Max(anchor, focus), start, text.Length);
+            return text.Substring(start, end - start);
         }
     }
 }

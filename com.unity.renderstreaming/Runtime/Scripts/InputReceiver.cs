@@ -29,6 +29,12 @@ namespace Unity.RenderStreaming
         public override event Action<InputDevice, InputDeviceChange> onDeviceChange;
 
         /// <summary>
+        /// Invoked when Ctrl+C or Ctrl+X is pressed on the selected input field.
+        /// The argument is the selected text. Not invoked for password fields or when nothing is selected.
+        /// </summary>
+        public event Action<string> onInputFieldCopy;
+
+        /// <summary>
         /// Gets or sets the input action asset associated with the player.
         /// </summary>
         public InputActionAsset actions
@@ -303,6 +309,7 @@ namespace Unity.RenderStreaming
             {
                 receiver = new Receiver(channel);
                 receiver.onDeviceChange += onDeviceChange;
+                receiver.onInputFieldCopy += OnReceiverInputFieldCopy;
                 receiver.InputFieldEventFilter = m_InputFieldEventFilter;
                 receiverInput = new InputRemoting(receiver);
                 subscriberDisposer = receiverInput.Subscribe(receiverInput);
@@ -511,6 +518,11 @@ namespace Unity.RenderStreaming
 
             m_CurrentActionMap = null;
             m_ActionsInitialized = false;
+        }
+
+        private void OnReceiverInputFieldCopy(string text)
+        {
+            onInputFieldCopy?.Invoke(text);
         }
 
         protected virtual void OnDeviceChange(InputDevice device, InputDeviceChange change)
